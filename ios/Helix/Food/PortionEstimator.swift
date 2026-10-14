@@ -27,8 +27,8 @@ struct PortionEstimator {
         let depth = input.depth
         CVPixelBufferLockBaseAddress(depth, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(depth, .readOnly) }
-        input.confidence.map { CVPixelBufferLockBaseAddress($0, .readOnly) }
-        defer { input.confidence.map { CVPixelBufferUnlockBaseAddress($0, .readOnly) } }
+        if let c = input.confidence { CVPixelBufferLockBaseAddress(c, .readOnly) }
+        defer { if let c = input.confidence { CVPixelBufferUnlockBaseAddress(c, .readOnly) } }
         masks.forEach { CVPixelBufferLockBaseAddress($0, .readOnly) }
         defer { masks.forEach { CVPixelBufferUnlockBaseAddress($0, .readOnly) } }
 

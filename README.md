@@ -72,6 +72,6 @@ Classifier labels are mapped to nutrition data through the `aliases` in `foods.j
 
 ## Status
 
-The Swift code is written but has **not been compiled or run yet**. It was written on Windows, where Xcode isn't available. Expect a few compile fixes on the first build, and test LiDAR portion accuracy against a kitchen scale before relying on it. The web prototype runs as-is.
+Both apps compile cleanly with Xcode 26 in the cloud build (see above), but they have **not been run on a device yet**. Test LiDAR portion accuracy against a kitchen scale before relying on it. The web prototype runs as-is.
 
 Helix gives general fitness guidance, not medical advice.
