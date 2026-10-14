@@ -1,0 +1,69 @@
+# Generate the Xcode project on a Mac with:  brew install xcodegen && xcodegen
+name: Helix
+options:
+  bundleIdPrefix: com.example.helix   # change to your own reverse-domain before signing
+  deploymentTarget:
+    iOS: "17.0"
+    watchOS: "10.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""              # set your team (a free Apple ID works for personal installs)
+
+targets:
+  Helix:
+    type: application
+    platform: iOS
+    sources:
+      - path: Helix
+      - path: Shared
+    entitlements:
+      path: Helix/Helix.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+    info:
+      path: Helix/Info.plist
+      properties:
+        CFBundleDisplayName: Helix
+        UILaunchScreen: {}
+        UIRequiredDeviceCapabilities: [arm64]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSCameraUsageDescription: Helix uses the camera and LiDAR sensor to recognise food and measure portion size. Images never leave your phone.
+        NSHealthShareUsageDescription: Helix reads energy burned, heart rate variability, resting heart rate, sleep, VO2 max, workouts and body mass to set your daily targets and readiness.
+        NSHealthUpdateUsageDescription: Helix saves the calories and macros you log, and the workouts you record on Apple Watch, to the Health app.
+    dependencies:
+      - target: HelixWatch
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.helix
+        TARGETED_DEVICE_FAMILY: "1"
+    scheme: {}                        # shared scheme so `xcodebuild -scheme Helix` works headless
+
+  HelixWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: HelixWatch
+      - path: Shared
+    entitlements:
+      path: HelixWatch/HelixWatch.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+    info:
+      path: HelixWatch/Info.plist
+      properties:
+        CFBundleDisplayName: Helix
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: com.example.helix
+        WKBackgroundModes: [workout-processing]
+        NSHealthShareUsageDescription: Helix reads your heart rate and energy during workouts.
+        NSHealthUpdateUsageDescription: Helix saves the workouts you record to the Health app.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.helix.watchkitapp
+    scheme: {}

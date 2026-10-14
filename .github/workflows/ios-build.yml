@@ -1,0 +1,84 @@
+# Compiles the iPhone and Apple Watch apps on a free GitHub macOS runner, so compile
+# errors show up without owning a Mac. Nothing is signed or uploaded anywhere.
+name: iOS build
+
+on:
+  push:
+    paths: ["ios/**", ".github/workflows/ios-build.yml"]
+  pull_request:
+    paths: ["ios/**", ".github/workflows/ios-build.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.scheme }}
+    # macOS 26 images ship Xcode 26, which has the FoundationModels SDK used by the coach.
+    runs-on: macos-26
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scheme: Helix
+            destination: generic/platform=iOS Simulator
+          - scheme: HelixWatch
+            destination: generic/platform=watchOS Simulator
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26"
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: List schemes
+        run: xcodebuild -list -project Helix.xcodeproj
+
+      - name: Build ${{ matrix.scheme }}
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Helix.xcodeproj \
+            -scheme "${{ matrix.scheme }}" \
+            -destination "${{ matrix.destination }}" \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee build-${{ matrix.scheme }}.log
+
+      - name: Summarise compile errors
+        if: failure()
+        run: |
+          log=build-${{ matrix.scheme }}.log
+          [ -f "$log" ] || exit 0
+          {
+            echo "## ${{ matrix.scheme }}: compile errors"
+            echo '```'
+            grep -E "error:" "$log" | sed "s|$GITHUB_WORKSPACE/||" | sort -u | head -200
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ matrix.scheme }}
+          path: ios/build-${{ matrix.scheme }}.log
+          retention-days: 14
