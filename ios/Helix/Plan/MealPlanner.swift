@@ -5,6 +5,8 @@ import Foundation
 enum MealPlanner {
     struct PlannedMeal: Identifiable {
         var name: String
+        /// When the meal is planned for, shown on the day's timeline.
+        var time: String
         var items: [(food: FoodInfo, grams: Double)]
         var id: String { name }
         var macros: Macros { items.reduce(.zero) { $0 + $1.food.macros(grams: $1.grams) } }
@@ -13,15 +15,15 @@ enum MealPlanner {
     /// Splits what's left of today across the remaining meals.
     static func restOfDay(remaining: Macros, diet: Diet, now: Date = .now) -> [PlannedMeal] {
         let hour = Calendar.current.component(.hour, from: now)
-        let slots: [(String, Double)] = switch hour {
-        case ..<10: [("Lunch", 0.4), ("Snack", 0.15), ("Dinner", 0.45)]
-        case ..<15: [("Snack", 0.25), ("Dinner", 0.75)]
-        case ..<19: [("Dinner", 1.0)]
-        default: [("Evening snack", 1.0)]
+        let slots: [(String, String, Double)] = switch hour {
+        case ..<10: [("Lunch", "13:00", 0.4), ("Snack", "16:30", 0.15), ("Dinner", "20:00", 0.45)]
+        case ..<15: [("Snack", "16:30", 0.25), ("Dinner", "20:00", 0.75)]
+        case ..<19: [("Dinner", "20:00", 1.0)]
+        default: [("Evening snack", "21:30", 1.0)]
         }
         let seed = Calendar.current.ordinality(of: .day, in: .year, for: now) ?? 0
         return slots.enumerated().map { i, slot in
-            PlannedMeal(name: slot.0, items: meal(for: remaining.scaled(by: slot.1), diet: diet, rotation: seed + i * 3))
+            PlannedMeal(name: slot.0, time: slot.1, items: meal(for: remaining.scaled(by: slot.2), diet: diet, rotation: seed + i * 3))
         }
     }
 

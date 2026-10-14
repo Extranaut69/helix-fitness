@@ -1,50 +1,44 @@
 import SwiftUI
+import UIKit
 
+/// iPhone design tokens. Light and dark values match the prototype; readiness floods live in `Palette`.
 enum Theme {
-    static let hull = Color(red: 0.043, green: 0.067, blue: 0.110)
-    static let panel = Color(red: 0.067, green: 0.102, blue: 0.157)
-    static let line = Color(red: 0.133, green: 0.192, blue: 0.290)
-    static let mute = Color(red: 0.522, green: 0.576, blue: 0.667)
-    static let ice = Color(red: 0.498, green: 0.878, blue: 1.0)
-    static let protein = Color(red: 1.0, green: 0.541, blue: 0.420)
-    static let carbs = Color(red: 1.0, green: 0.812, blue: 0.361)
-    static let fat = Color(red: 0.725, green: 0.608, blue: 1.0)
-    static let good = Color(red: 0.357, green: 0.890, blue: 0.643)
-    static let warn = Color(red: 1.0, green: 0.710, blue: 0.278)
-    static let bad = Color(red: 1.0, green: 0.365, blue: 0.451)
+    // Surface and ink
+    static let fog = Color(light: 0xEEF0ED, dark: 0x0E1110)
+    static let paper = Color(light: 0xFFFFFF, dark: 0x171B19)
+    static let ink = Color(light: 0x121614, dark: 0xECEFEC)
+    static let ink2 = Color(light: 0x59615C, dark: 0xA0A8A3)
+    static let ink3 = Color(light: 0x8A928D, dark: 0x6E7671)
+    static let rule = Color(light: 0xD6DBD7, dark: 0x29302C)
+    static let wash = ink.opacity(0.06)
 
-    static func color(for band: Readiness.Band) -> Color {
-        switch band {
-        case .primed: good
-        case .steady: warn
-        case .recover: bad
-        }
-    }
+    // The one action colour
+    static let action = Color(light: 0x2F4BFF, dark: 0x7086FF)
+    static let onAction = Color(light: 0xFFFFFF, dark: 0x0B0E0D)
 
-    static func scoreColor(_ v: Double) -> Color { v >= 70 ? good : v >= 50 ? warn : bad }
+    // Macros
+    static let protein = Color(light: 0x2F4BFF, dark: 0x7086FF)
+    static let carbs = Color(light: 0x0E9F92, dark: 0x3CCFC0)
+    static let fat = Color(light: 0xC98F00, dark: 0xF2C14E)
+
+    // Camera surfaces stay dark in either theme
+    static let lens = Color(hex: 0x0B0D0C)
+    static let lensInk = Color(hex: 0xF2F4F2)
+
+    static let onFlood = Palette.onFlood
+    static func flood(for band: Readiness.Band) -> Color { Palette.flood(for: band) }
+
+    // Spacing and shape. Radius follows importance instead of being the same everywhere.
+    static let gutter: CGFloat = 20
+    static let sectionGap: CGFloat = 30
+    static let floodRadius: CGFloat = 36
+    static let panelRadius: CGFloat = 14
+    static let controlRadius: CGFloat = 12
 }
 
-struct Card<Content: View>: View {
-    @ViewBuilder var content: Content
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) { content }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Theme.line))
-    }
-}
-
-struct Eyebrow: View {
-    var text: String
-    init(_ text: String) { self.text = text }
-    var body: some View {
-        Text(text.uppercased()).font(.caption2.weight(.semibold)).tracking(1.5).foregroundStyle(Theme.mute)
-    }
-}
-
-extension Font {
-    static func data(_ size: CGFloat, weight: Font.Weight = .medium) -> Font {
-        .system(size: size, weight: weight, design: .monospaced)
+extension Color {
+    init(light: UInt32, dark: UInt32) {
+        let l = UIColor(Color(hex: light)), d = UIColor(Color(hex: dark))
+        self.init(uiColor: UIColor { $0.userInterfaceStyle == .dark ? d : l })
     }
 }

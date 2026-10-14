@@ -13,16 +13,17 @@ struct RootView: View {
         Group {
             if let profile = model.activeProfile(in: profiles) {
                 TabView(selection: $tab) {
-                    TodayView(profile: profile, showProfiles: $showProfiles, openScan: { tab = .scan })
-                        .tabItem { Label("Today", systemImage: "circle.dotted.circle") }.tag(Tab.today)
+                    TodayView(profile: profile, showProfiles: $showProfiles,
+                              openScan: { tab = .scan }, openTrain: { tab = .train }, openPlan: { tab = .plan })
+                        .tabItem { Label("Today", systemImage: "sun.horizon") }.tag(Tab.today)
                     TrainView(profile: profile)
                         .tabItem { Label("Train", systemImage: "dumbbell") }.tag(Tab.train)
                     ScanView(profile: profile, onLogged: { tab = .today })
-                        .tabItem { Label("Scan", systemImage: "camera.metering.matrix") }.tag(Tab.scan)
+                        .tabItem { Label("Scan", systemImage: "viewfinder") }.tag(Tab.scan)
                     CoachView(profile: profile)
-                        .tabItem { Label("Coach", systemImage: "bubble.left.and.text.bubble.right") }.tag(Tab.coach)
+                        .tabItem { Label("Coach", systemImage: "text.bubble") }.tag(Tab.coach)
                     PlanView(profile: profile)
-                        .tabItem { Label("Plan", systemImage: "list.bullet.rectangle") }.tag(Tab.plan)
+                        .tabItem { Label("Plan", systemImage: "list.bullet") }.tag(Tab.plan)
                 }
                 .sheet(isPresented: $showProfiles) { ProfilesView() }
                 .task(id: profile.id) { await model.refresh(profile) }
@@ -30,6 +31,6 @@ struct RootView: View {
                 OnboardingView(isFirstProfile: true) { _ in }
             }
         }
-        .background(Theme.hull.ignoresSafeArea())
+        .background(Theme.fog.ignoresSafeArea())
     }
 }

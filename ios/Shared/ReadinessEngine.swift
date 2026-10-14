@@ -27,14 +27,33 @@ struct Readiness: Codable, Sendable {
 
     enum Band: String, Codable, Sendable {
         case primed, steady, recover
-        var title: String { rawValue.capitalized }
+
+        init(score: Int) { self = score >= 75 ? .primed : score >= 55 ? .steady : .recover }
+
+        /// Short name, used on the Watch and in the coach prompt.
+        var title: String {
+            switch self {
+            case .primed: "Go hard"
+            case .steady: "Train as planned"
+            case .recover: "Recovery day"
+            }
+        }
+
+        /// The sentence the Today screen leads with on a training day.
+        var headline: String {
+            switch self {
+            case .primed: "Go hard today."
+            case .steady: "Train as planned."
+            case .recover: "Take a recovery day."
+            }
+        }
     }
 
     var score: Int
     var components: [Component]
     var loadRatio: Double?
 
-    var band: Band { score >= 75 ? .primed : score >= 55 ? .steady : .recover }
+    var band: Band { Band(score: score) }
     var weakest: Component? { components.min { $0.score < $1.score } }
 }
 

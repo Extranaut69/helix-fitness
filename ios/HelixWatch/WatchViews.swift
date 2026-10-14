@@ -1,8 +1,8 @@
 import SwiftUI
 import HealthKit
 
-private let ice = Color(red: 0.498, green: 0.878, blue: 1.0)
-private let zoneColors: [Color] = [.gray, .blue, .green, .yellow, .red]
+/// Heart-rate zones as one hue getting stronger, instead of a rainbow.
+private let zoneColors: [Color] = [0.3, 0.45, 0.6, 0.8, 1.0].map { Palette.actionOnDark.opacity($0) }
 
 struct WatchHomeView: View {
     @Environment(WatchLink.self) private var link
@@ -11,35 +11,38 @@ struct WatchHomeView: View {
     var body: some View {
         if workout.isRunning {
             LiveWorkoutView()
-        } else {
+        } else if let day = link.day {
+            // Same idea as the iPhone's Today screen: the face takes the colour of readiness.
             ScrollView {
-                VStack(spacing: 10) {
-                    if let day = link.day {
-                        ZStack {
-                            Circle().stroke(Color.white.opacity(0.12), lineWidth: 8)
-                            Circle().trim(from: 0, to: CGFloat(day.readiness) / 100)
-                                .stroke(ice, style: StrokeStyle(lineWidth: 8, lineCap: .round)).rotationEffect(.degrees(-90))
-                            VStack(spacing: 0) {
-                                Text("\(day.readiness)").font(.system(size: 30, weight: .bold, design: .rounded))
-                                Text(day.readinessBand.uppercased()).font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
-                            }
-                        }
-                        .frame(width: 96, height: 96)
-                        HStack {
-                            Label("\(Int(day.proteinLeft)) g", systemImage: "fork.knife").foregroundStyle(.orange)
-                            Spacer()
-                            Text("\(Int(day.kcalLeft)) kcal").foregroundStyle(.secondary)
-                        }
-                        .font(.footnote)
-                        Text(day.session.title).font(.headline).frame(maxWidth: .infinity, alignment: .leading)
-                        Button("Start strength") { Task { await workout.start(activity: .traditionalStrengthTraining) } }
-                            .tint(ice)
-                        Button("Start run") { Task { await workout.start(activity: .running) } }
-                    } else {
-                        Text("Open Helix on your iPhone once to sync today's plan.").multilineTextAlignment(.center).font(.footnote)
-                        Button("Start workout") { Task { await workout.start(activity: .traditionalStrengthTraining) } }
-                    }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(day.readiness)")
+                        .font(.score(78))
+                        .tracking(-2)
+                        .lineLimit(1)
+                        .accessibilityLabel("Readiness \(day.readiness), \(day.readinessBand)")
+                    Text(day.readinessBand).font(.display(18, weight: .heavy))
+                    Text("\(Int(day.proteinLeft)) g protein and \(Int(day.kcalLeft)) kcal left")
+                        .font(.system(size: 13))
+                        .padding(.top, 2)
+                    Rectangle().fill(Palette.onFlood.opacity(0.25)).frame(height: 1).padding(.vertical, 6)
+                    Text(day.session.title).font(.display(16, weight: .semibold))
+                    Button("Start strength") { Task { await workout.start(activity: .traditionalStrengthTraining) } }
+                        .buttonStyle(.borderedProminent)
+                        .tint(Palette.onFlood)
+                        .foregroundStyle(Palette.flood(forScore: day.readiness))
+                        .padding(.top, 4)
+                    Button("Start run") { Task { await workout.start(activity: .running) } }
+                        .buttonStyle(.bordered)
+                        .tint(Palette.onFlood)
                 }
+                .foregroundStyle(Palette.onFlood)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .containerBackground(Palette.flood(forScore: day.readiness), for: .navigation)
+        } else {
+            VStack(spacing: 10) {
+                Text("Open Helix on your iPhone once to sync today's plan.").multilineTextAlignment(.center).font(.footnote)
+                Button("Start workout") { Task { await workout.start(activity: .traditionalStrengthTraining) } }
             }
             .navigationTitle("Helix")
         }
@@ -56,13 +59,13 @@ struct LiveWorkoutView: View {
             // Page 1: live metrics
             VStack(alignment: .leading, spacing: 4) {
                 if let start = workout.startDate {
-                    Text(start, style: .timer).font(.system(.title2, design: .rounded).monospacedDigit()).foregroundStyle(.yellow)
+                    Text(start, style: .timer).font(.display(24, weight: .semibold).monospacedDigit())
                 }
                 HStack(alignment: .firstTextBaseline) {
-                    Text("\(Int(workout.heartRate))").font(.system(size: 44, weight: .semibold, design: .rounded).monospacedDigit())
-                    Text("BPM").font(.caption2).foregroundStyle(.secondary)
+                    Text("\(Int(workout.heartRate))").font(.score(52).monospacedDigit())
+                    Text("bpm").font(.footnote).foregroundStyle(.secondary)
                     Spacer()
-                    Text("Z\(workout.zone(for: workout.heartRate) + 1)").font(.headline)
+                    Text("Zone \(workout.zone(for: workout.heartRate) + 1)").font(.display(15, weight: .bold))
                         .foregroundStyle(zoneColors[workout.zone(for: workout.heartRate)])
                 }
                 HStack(spacing: 3) {
@@ -91,7 +94,8 @@ struct LiveWorkoutView: View {
                                     Text("Set \(i + 1)")
                                     Spacer()
                                     if let w = ex.weightKg { Text("\(w, specifier: "%.1f") kg").foregroundStyle(.secondary) }
-                                    Image(systemName: done.contains(key) ? "checkmark.circle.fill" : "circle").foregroundStyle(done.contains(key) ? .green : .secondary)
+                                    Image(systemName: done.contains(key) ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(done.contains(key) ? Palette.actionOnDark : .secondary)
                                 }
                             }
                         }

@@ -19,18 +19,20 @@ struct ProfilesView: View {
                             model.activeProfileID = p.id
                         } label: {
                             HStack {
-                                Text(p.initials).font(.footnote.weight(.bold)).frame(width: 32, height: 32)
-                                    .background(Theme.panel, in: Circle())
+                                Text(p.initials).font(.system(size: 12, weight: .bold).width(.condensed)).frame(width: 32, height: 32)
+                                    .overlay(Circle().strokeBorder(Theme.ink, lineWidth: 1.5))
                                 VStack(alignment: .leading) {
-                                    Text(p.name).foregroundStyle(.primary)
-                                    Text("\(p.spec.goal.title) · \(p.usesHealthKit ? "Apple Watch linked" : "estimated energy")")
-                                        .font(.caption).foregroundStyle(Theme.mute)
+                                    Text(p.name).foregroundStyle(Theme.ink)
+                                    Text("\(p.spec.goal.title), \(p.usesHealthKit ? "Apple Watch linked" : "energy estimated")")
+                                        .font(.caption).foregroundStyle(Theme.ink2)
                                 }
                                 Spacer()
                                 if p.id == model.activeProfile(in: profiles)?.id {
-                                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.ice)
+                                    Image(systemName: "checkmark").font(.body.weight(.semibold)).foregroundStyle(Theme.action)
+                                        .accessibilityLabel("Active")
                                 }
                             }
+                            .foregroundStyle(Theme.ink)
                         }
                         .swipeActions {
                             if profiles.count > 1 {
@@ -47,6 +49,8 @@ struct ProfilesView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Theme.fog)
             .navigationTitle("People")
             .toolbar { Button("Done") { dismiss() } }
             .sheet(isPresented: $adding) {
@@ -71,7 +75,7 @@ struct ProfileForm: View {
 
     var body: some View {
         TextField("Name", text: $profile.name)
-        Picker("Sex (for BMR)", selection: Binding(get: { profile.spec.sex }, set: { profile.spec.sex = $0 })) {
+        Picker("Sex, for resting energy", selection: Binding(get: { profile.spec.sex }, set: { profile.spec.sex = $0 })) {
             ForEach(Sex.allCases) { Text($0.label).tag($0) }
         }
         Stepper("Age \(profile.age)", value: $profile.age, in: 13...100)
@@ -86,7 +90,7 @@ struct ProfileForm: View {
         Picker("Daily activity", selection: Binding(get: { profile.spec.activity }, set: { profile.spec.activity = $0 })) {
             ForEach(ActivityLevel.allCases) { Text($0.label).tag($0) }
         }
-        Stepper("Training \(profile.trainDaysPerWeek) days / week", value: $profile.trainDaysPerWeek, in: 0...7)
+        Stepper("Training \(profile.trainDaysPerWeek) days a week", value: $profile.trainDaysPerWeek, in: 0...7)
         Toggle("Use this iPhone's Apple Watch data", isOn: Binding(
             get: { profile.usesHealthKit },
             set: { on in
@@ -116,11 +120,11 @@ struct OnboardingView: View {
                 Section {
                     Text(isFirstProfile ? "Helix builds a plan for you from your body, your goal and your Apple Watch data." :
                             "Add a family member or friend. Each person gets their own targets, meals and training.")
-                        .font(.subheadline).foregroundStyle(Theme.mute)
+                        .font(.subheadline).foregroundStyle(Theme.ink2)
                 }
                 Section("About") {
                     TextField("Name", text: $name)
-                    Picker("Sex (for BMR)", selection: $spec.sex) { ForEach(Sex.allCases) { Text($0.label).tag($0) } }
+                    Picker("Sex, for resting energy", selection: $spec.sex) { ForEach(Sex.allCases) { Text($0.label).tag($0) } }
                     Stepper("Age \(spec.age)", value: $spec.age, in: 13...100)
                     Stepper("Height \(Int(spec.heightCm)) cm", value: $spec.heightCm, in: 120...230)
                     Stepper(String(format: "Weight %.1f kg", spec.weightKg), value: $spec.weightKg, in: 30...250, step: 0.5)
@@ -129,7 +133,7 @@ struct OnboardingView: View {
                     Picker("Goal", selection: $spec.goal) { ForEach(Goal.allCases) { Text($0.title).tag($0) } }
                     Picker("Diet", selection: $spec.diet) { ForEach(Diet.allCases) { Text($0.label).tag($0) } }
                     Picker("Daily activity", selection: $spec.activity) { ForEach(ActivityLevel.allCases) { Text($0.label).tag($0) } }
-                    Stepper("Training \(spec.trainDaysPerWeek) days / week", value: $spec.trainDaysPerWeek, in: 0...7)
+                    Stepper("Training \(spec.trainDaysPerWeek) days a week", value: $spec.trainDaysPerWeek, in: 0...7)
                 }
                 if isFirstProfile {
                     Section {
@@ -141,9 +145,13 @@ struct OnboardingView: View {
                 let preview = NutritionEngine.targets(for: spec, energy: NutritionEngine.estimatedEnergy(for: spec))
                 Section("Starting targets") {
                     LabeledContent("Calories", value: "\(Int(preview.macros.kcal)) kcal")
-                    LabeledContent("Protein · carbs · fat", value: "\(Int(preview.macros.protein)) · \(Int(preview.macros.carbs)) · \(Int(preview.macros.fat)) g")
+                    LabeledContent("Protein", value: "\(Int(preview.macros.protein)) g")
+                    LabeledContent("Carbs", value: "\(Int(preview.macros.carbs)) g")
+                    LabeledContent("Fat", value: "\(Int(preview.macros.fat)) g")
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Theme.fog)
             .navigationTitle(isFirstProfile ? "Welcome to Helix" : "Add person")
             .toolbar {
                 Button("Save") {

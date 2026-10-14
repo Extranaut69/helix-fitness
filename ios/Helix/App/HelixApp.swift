@@ -16,8 +16,7 @@ struct HelixApp: App {
         WindowGroup {
             RootView()
                 .environment(model)
-                .preferredColorScheme(.dark)
-                .tint(Theme.ice)
+                .tint(Theme.action)
         }
         .modelContainer(container)
     }

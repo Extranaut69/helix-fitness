@@ -12,7 +12,7 @@ struct HelixWatchApp: App {
             }
             .environment(link)
             .environment(workout)
-            .tint(Color(red: 0.498, green: 0.878, blue: 1.0))
+            .tint(Palette.actionOnDark)
         }
     }
 }

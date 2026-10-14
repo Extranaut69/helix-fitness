@@ -23,34 +23,42 @@ struct BarcodePanel: View {
                         Task { await lookup() }
                     }
                     .frame(height: 220)
-                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                 }
 
-                HStack {
-                    TextField("Barcode number", text: $code).keyboardType(.numberPad).textFieldStyle(.roundedBorder)
-                    Button("Look up") { Task { await lookup() } }.buttonStyle(.bordered).disabled(code.isEmpty || loading)
+                HStack(spacing: 8) {
+                    TextField("Barcode number", text: $code)
+                        .keyboardType(.numberPad)
+                        .font(.figure(15, weight: .regular))
+                        .padding(.horizontal, 12).padding(.vertical, 10)
+                        .background(Theme.paper, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous).strokeBorder(Theme.rule, lineWidth: 1.5))
+                    Button("Look up") { Task { await lookup() } }.buttonStyle(.helix(.primary)).disabled(code.isEmpty || loading)
                 }
 
-                if loading { ProgressView() }
-                if let error { Text(error).font(.subheadline).foregroundStyle(Theme.warn) }
+                if loading { ProgressView().tint(Theme.ink2) }
+                if let error { Text(error).font(.subheadline).foregroundStyle(Theme.ink).frame(maxWidth: .infinity, alignment: .leading) }
 
                 if let product {
                     let grams = product.servingGrams * servings
                     let m = product.food.macros(grams: grams)
-                    Card {
-                        Text(product.food.name).font(.headline)
+                    Panel {
+                        Text(product.food.name).font(.system(size: 16, weight: .semibold)).foregroundStyle(Theme.ink)
                         Stepper("\(servings, specifier: "%.1f") × \(Int(product.servingGrams)) g", value: $servings, in: 0.5...10, step: 0.5)
-                        Text("\(Int(m.kcal)) kcal · \(m.protein, specifier: "%.1f") P · \(m.carbs, specifier: "%.1f") C · \(m.fat, specifier: "%.1f") F")
-                            .font(.data(12)).foregroundStyle(Theme.mute)
-                        Button("Log") {
+                            .foregroundStyle(Theme.ink)
+                        Text("\(Int(m.kcal)) kcal, \(m.protein, specifier: "%.1f") g protein, \(m.carbs, specifier: "%.1f") g carbs, \(m.fat, specifier: "%.1f") g fat")
+                            .font(.figure(12.5, weight: .regular)).foregroundStyle(Theme.ink2)
+                        Button("Log \(servings == 1 ? "one serving" : String(format: "%.1f servings", servings))") {
                             model.log([(product.food, grams: grams, volume: nil)], name: product.food.name, source: .barcode, for: profile)
                             self.product = nil; code = ""; servings = 1
                             onLogged()
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(.helix(.primary, small: true))
                     }
                 }
-                Text("Product data from Open Food Facts, a free and open database.").font(.caption).foregroundStyle(Theme.mute)
+                Text("Product data comes from Open Food Facts, a free and open database.")
+                    .font(.footnote).foregroundStyle(Theme.ink2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }

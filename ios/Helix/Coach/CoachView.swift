@@ -11,49 +11,71 @@ struct CoachView: View {
     @State private var draft = ""
     @State private var thinking = false
 
-    private let suggestions = ["What should I eat next?", "Should I train hard today?", "How is my progress?", "How did I sleep?", "Protein left?"]
+    private let suggestions = ["What should I eat next?", "Should I train hard today?", "How is my progress?", "How did I sleep?", "How much protein is left?"]
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 10) {
-                            ForEach(messages) { m in
-                                Text(m.text)
-                                    .padding(.horizontal, 13).padding(.vertical, 10)
-                                    .background(m.fromUser ? Theme.ice : Theme.panel, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                    .foregroundStyle(m.fromUser ? Color.black : .primary)
-                                    .frame(maxWidth: 300, alignment: m.fromUser ? .trailing : .leading)
-                                    .frame(maxWidth: .infinity, alignment: m.fromUser ? .trailing : .leading)
+                        VStack(alignment: .leading, spacing: 0) {
+                            ScreenHeader(title: "Coach", subtitle: coach.engine == .onDevice
+                                         ? "Answers from your own data, on this iPhone."
+                                         : "Answers from your own data, using fixed rules on this iPhone.")
+                            LazyVStack(alignment: .leading, spacing: 14) {
+                                ForEach(messages) { m in
+                                    Group {
+                                        if m.fromUser {
+                                            Text(m.text)
+                                                .padding(.horizontal, 13).padding(.vertical, 9)
+                                                .foregroundStyle(Theme.onAction)
+                                                .background(Theme.action, in: UnevenRoundedRectangle(topLeadingRadius: 16, bottomLeadingRadius: 16,
+                                                                                                     bottomTrailingRadius: 4, topTrailingRadius: 16,
+                                                                                                     style: .continuous))
+                                                .frame(maxWidth: 300, alignment: .trailing)
+                                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                        } else {
+                                            Text(m.text)
+                                                .foregroundStyle(Theme.ink)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                        }
+                                    }
+                                    .font(.system(size: 15))
                                     .id(m.id)
+                                }
+                                if thinking { ProgressView().tint(Theme.ink2) }
                             }
-                            if thinking { ProgressView().padding(.leading, 8) }
+                            .padding(.horizontal, Theme.gutter)
                         }
-                        .padding(16)
+                        .padding(.bottom, 16)
                     }
                     .onChange(of: messages.count) { _, _ in
                         if let last = messages.last { withAnimation { proxy.scrollTo(last.id, anchor: .bottom) } }
                     }
                 }
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
+                    HStack(spacing: 8) {
                         ForEach(suggestions, id: \.self) { s in
-                            Button(s) { Task { await ask(s) } }.buttonStyle(.bordered).font(.caption)
+                            Button(s) { Task { await ask(s) } }.buttonStyle(ChipButtonStyle())
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, Theme.gutter)
                 }
-                HStack {
-                    TextField("Ask your coach…", text: $draft).textFieldStyle(.roundedBorder).onSubmit { send() }
-                    Button("Send", action: send).buttonStyle(.borderedProminent).disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
+                HStack(spacing: 8) {
+                    TextField("Ask about food, training or sleep", text: $draft)
+                        .padding(.horizontal, 12).padding(.vertical, 10)
+                        .background(Theme.paper, in: RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: Theme.controlRadius, style: .continuous).strokeBorder(Theme.rule, lineWidth: 1.5))
+                        .onSubmit { send() }
+                    Button("Send", action: send)
+                        .buttonStyle(.helix(.primary))
+                        .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
-                .padding(16)
+                .padding(.horizontal, Theme.gutter)
+                .padding(.vertical, 12)
             }
-            .navigationTitle("Coach")
-            .toolbar {
-                Text(coach.engine == .onDevice ? "On-device AI" : "Rules").font(.caption).foregroundStyle(Theme.mute)
-            }
+            .background(Theme.fog)
+            .toolbar(.hidden, for: .navigationBar)
             .task(id: profile.id) {
                 messages = [Message(fromUser: false, text: CoachService.ruleBased("", context()))]
             }
